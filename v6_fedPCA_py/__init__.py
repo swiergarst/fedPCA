@@ -27,9 +27,9 @@ def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
     #filters = tb.Filters(complevel=5, complib='blosc')
     #result = f.create_carray(f.root, 'data', tb.Float32Atom(), shape=(rows_to_calc, num_cols), filters=filters)
 
-    rows = data.drop(columns = ['test/train', 'label']).values[iter_num * rows_to_calc: min(((iter_num + 1) * rows_to_calc), num_rows),:]
+    rows = data.drop(columns = ['test/train', 'label']).values[:,iter_num * rows_to_calc: min(((iter_num + 1) * rows_to_calc), num_rows)]
 
-    result = np.zeros((num_cols, num_rows))
+    result = np.zeros((num_cols, rows_to_calc))
 
     
     for i in range(num_cols):
