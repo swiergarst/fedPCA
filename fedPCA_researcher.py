@@ -34,7 +34,7 @@ task = client.post_task(
         'method' : 'get_cov_mat'
     },
     name = "PCA, first step",
-    image = "sgarst/federated-learning:fedPCA2",
+    image = "sgarst/federated-learning:fedPCA3",
     organization_ids=ids,
     collaboration_id = 1
 )
