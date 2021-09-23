@@ -17,6 +17,8 @@ def rpc_master(data):
 
 
 def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
+
+
     #data_vals = data.drop(columns = ['test/train', 'label']).values
     num_rows = data.drop(columns = ['test/train', 'label']).values.shape[0]
     num_cols = data.drop(columns = ['test/train', 'label']).values.shape[1]
@@ -29,7 +31,7 @@ def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
 
     rows = data.drop(columns = ['test/train', 'label']).values[:,iter_num * rows_to_calc: min(((iter_num + 1) * rows_to_calc), num_rows)]
 
-    result = np.zeros((num_cols, rows_to_calc))
+    result = np.zeros_like(rows)
 
     
     for i in range(num_cols):

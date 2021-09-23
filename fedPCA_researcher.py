@@ -8,6 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 import sys
 import os
+import math
 import time
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from io import BytesIO
@@ -33,6 +34,7 @@ ids = [org['id'] for org in client.collaboration.get(1)['organizations']]
 ## first step: make the data zero mean and 1 variance
 # to do this, every client needs to return its own mean/variance, as well as dataset size. we also need the dimensions of the dataset, so might as well return those within this step
 
+print("requesting metadata")
 metadata_task = client.post_task(
     input_ = {
         'method' : 'get_metadata'
@@ -63,9 +65,6 @@ for i in range(num_clients):
     local_stds[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_std"]
     dataset_sizes[i] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["num_rows"]
 
-    print(local_means[i,-1])
-
-
 
 # calculate weighted average/std over all clients
 ## TODO: doublecheck if this math is legit
@@ -73,31 +72,48 @@ for i in range(num_clients):
 global_mean = average(local_means, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
 global_std = average(local_stds, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
 
-print(global_mean)
-
-
 
 # send weighted average/std back, let nodes calculate local covariance matrix. unfortunately, we have to do this 5 rows at a time b/c of sending file size limits
 
 rows_to_calc = 5
 
-cov_partial_task = client.post_task(
-    input_= {
-        "method" : "calc_cov_mat",
-        "kwargs" : {
-            "global_mean" : global_mean,
-            "global_std" : global_std,
-            "rows_to_calc" : rows_to_calc,
-            "iter_num" : 0
-         }
-    },
-    name = "PCA, covariance calc",
-    image= "sgarst/federated-learning:fedPCA4",
-    organization_ids=ids,
-    collaboration_id=1
-)
+cov_rounds = math.ceil(num_cols/rows_to_calc)
+global_cov_mat = np.zeros((num_cols,num_cols))
+print("starting cov matrix calculations")
+for round in range(cov_rounds):
+    print("round", round , "of", cov_rounds)
+    cov_partial_task = client.post_task(
+        input_= {
+            "method" : "calc_cov_mat",
+            "kwargs" : {
+                "global_mean" : global_mean,
+                "global_std" : global_std,
+                "rows_to_calc" : rows_to_calc,
+                "iter_num" : round
+            }
+        },
+        name = "PCA, covariance calc, round" + str(round),
+        image= "sgarst/federated-learning:fedPCA5",
+        organization_ids=ids,
+        collaboration_id=1
+    )
 
+    res = np.array(client.get_results(task_id = cov_partial_task.get("id")))
 
+    while(None in [res[i]["result"] for i in range(num_clients)]):
+        res = np.array(client.get_results(task_id = cov_partial_task.get("id")))
+        time.sleep(1)
+        #print(res[0]."result")
+
+    for i in range(num_clients):
+        global_cov_mat[:,round * rows_to_calc: min((round + 1) * rows_to_calc, num_cols)] += np.load(BytesIO(res[i]["result"]), allow_pickle=True)
+
+    
+
+print(global_cov_mat)
+
+with open ("cov_mat_global.npy", "wb") as f:
+    np.save(f, global_cov_mat)
 
 
 
@@ -108,9 +124,8 @@ cov_partial_task = client.post_task(
 # send the weighted avg/std, as well as global covariance matrix to nodes, so they can finally calculate the PCA.
 
 
-
-
 sys.exit()
+
 
 
 
