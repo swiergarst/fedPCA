@@ -1,5 +1,6 @@
 ### imports
 import numpy as np
+from numpy.core.fromnumeric import size
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
@@ -23,10 +24,97 @@ client.authenticate("researcher", "1234")
 privkey = "/home/swier/.local/share/vantage6/node/privkey_testOrg0.pem"
 client.setup_encryption(privkey)
 
-num_clients = 10
+num_clients = 10                                                                        
 
 
 ids = [org['id'] for org in client.collaboration.get(1)['organizations']]
+
+
+## first step: make the data zero mean and 1 variance
+# to do this, every client needs to return its own mean/variance, as well as dataset size. we also need the dimensions of the dataset, so might as well return those within this step
+
+metadata_task = client.post_task(
+    input_ = {
+        'method' : 'get_metadata'
+    },
+    name = "PCA, get metadata",
+    image = "sgarst/federated-learning:fedPCA3",
+    organization_ids=ids,
+    collaboration_id=1
+)
+
+res = np.array(client.get_results(task_id = metadata_task.get("id")))
+
+
+while(None in [res[i]["result"] for i in range(num_clients)]):
+    res = np.array(client.get_results(task_id = metadata_task.get("id")))
+    time.sleep(1)
+    #print(res[0]."result")
+
+num_cols = np.load(BytesIO(res[0]["result"]),allow_pickle=True)["num_cols"]
+
+local_means = np.zeros((num_clients, num_cols))
+local_stds = np.zeros((num_clients, num_cols))
+dataset_sizes = np.zeros(num_clients)
+
+
+for i in range(num_clients):
+    local_means[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_mean"]
+    local_stds[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_std"]
+    dataset_sizes[i] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["num_rows"]
+
+    print(local_means[i,-1])
+
+
+
+# calculate weighted average/std over all clients
+## TODO: doublecheck if this math is legit
+
+global_mean = average(local_means, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
+global_std = average(local_stds, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
+
+print(global_mean)
+
+
+
+# send weighted average/std back, let nodes calculate local covariance matrix. unfortunately, we have to do this 5 rows at a time b/c of sending file size limits
+
+rows_to_calc = 5
+
+cov_partial_task = client.post_task(
+    input_= {
+        "method" : "calc_cov_mat",
+        "kwargs" : {
+            "global_mean" : global_mean,
+            "global_std" : global_std,
+            "rows_to_calc" : rows_to_calc,
+            "iter_num" : 0
+         }
+    },
+    name = "PCA, covariance calc",
+    image= "sgarst/federated-learning:fedPCA4",
+    organization_ids=ids,
+    collaboration_id=1
+)
+
+
+
+
+
+# calculate global covariance matrix by summing up all the local cov matrices
+
+
+
+# send the weighted avg/std, as well as global covariance matrix to nodes, so they can finally calculate the PCA.
+
+
+
+
+sys.exit()
+
+
+
+
 
 
 task = client.post_task(
@@ -34,7 +122,7 @@ task = client.post_task(
         'method' : 'get_cov_mat'
     },
     name = "PCA, first step",
-    image = "sgarst/federated-learning:fedPCAOut",
+    image = "sgarst/federated-learning:fedPCAOut5",
     organization_ids=ids,
     collaboration_id = 1
 )
@@ -51,7 +139,7 @@ result = []
 for i in range(num_clients):
     result.append(np.load(BytesIO(res[i]["result"]),allow_pickle=True))
 
-print(result)
+print(result[0].shape)
 sys.exit()
 
 global_cov_mat = np.sum(local_cov_mats)
