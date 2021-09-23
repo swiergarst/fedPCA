@@ -34,7 +34,7 @@ task = client.post_task(
         'method' : 'get_cov_mat'
     },
     name = "PCA, first step",
-    image = "sgarst/federated-learning:fedPCA",
+    image = "sgarst/federated-learning:fedPCA2",
     organization_ids=ids,
     collaboration_id = 1
 )
@@ -42,7 +42,7 @@ task = client.post_task(
 
 
 res = np.array(client.get_results(task_id = task.get("id")))
-print(res.shape)
+
 while(None in [res[i]["result"] for i in range(num_clients)]):
     res = np.array(client.get_results(task_id = task.get("id")))
     time.sleep(1)
