@@ -40,7 +40,7 @@ metadata_task = client.post_task(
         'method' : 'get_metadata'
     },
     name = "PCA, get metadata",
-    image = "sgarst/federated-learning:fedPCA3",
+    image = "sgarst/federated-learning:fedPCA6",
     organization_ids=ids,
     collaboration_id=1
 )
@@ -93,7 +93,7 @@ for round in range(cov_rounds):
             }
         },
         name = "PCA, covariance calc, round" + str(round),
-        image= "sgarst/federated-learning:fedPCA5",
+        image= "sgarst/federated-learning:fedPCA6",
         organization_ids=ids,
         collaboration_id=1
     )

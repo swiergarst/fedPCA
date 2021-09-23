@@ -18,7 +18,7 @@ def rpc_master(data):
 
 def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
 
-
+    
     #data_vals = data.drop(columns = ['test/train', 'label']).values
     num_rows = data.drop(columns = ['test/train', 'label']).values.shape[0]
     num_cols = data.drop(columns = ['test/train', 'label']).values.shape[1]
@@ -28,11 +28,13 @@ def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
     #f = tb.open_file('tmp.h5', 'w')
     #filters = tb.Filters(complevel=5, complib='blosc')
     #result = f.create_carray(f.root, 'data', tb.Float32Atom(), shape=(rows_to_calc, num_cols), filters=filters)
+    row_amt = min( rows_to_calc, num_rows - (iter_num + 1) * rows_to_calc )
 
-    rows = data.drop(columns = ['test/train', 'label']).values[:,iter_num * rows_to_calc: min(((iter_num + 1) * rows_to_calc), num_rows)]
+    begin_row = iter_num * rows_to_calc
 
-    result = np.zeros_like(rows)
+    rows = data.drop(columns = ['test/train', 'label']).values[:, begin_row:begin_row + row_amt]
 
+    result = np.zeros((num_cols, row_amt))
     
     for i in range(num_cols):
         if (i%100) == 0:
