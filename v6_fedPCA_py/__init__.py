@@ -35,8 +35,8 @@ def RPC_get_cov_mat(data):
     f.close()
 
     file = tb.open_file('tmp.h5', 'r')
-    out = file.root.data
+    a = file.root.data
+    out = a[:,:]
 
 
-
-    return out[:,:]
+    return out
