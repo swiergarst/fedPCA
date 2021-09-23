@@ -23,7 +23,7 @@ def RPC_get_cov_mat(data):
     result = np.zeros((num_cols,num_cols))
     for i in range(num_cols):
         if (i%100) == 0:
-            info(f"column", i , "of ", num_cols)
+            info(f"column  {i} of {num_cols}")
         vec = np.copy(data_vals[:,i])
         result[i,:] = np.dot(vec,data_vals)
 
