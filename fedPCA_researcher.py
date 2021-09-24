@@ -41,7 +41,7 @@ metadata_task = client.post_task(
         'method' : 'get_metadata'
     },
     name = "PCA, get metadata",
-    image = "sgarst/federated-learning:fedPCA9",
+    image = "sgarst/federated-learning:fedPCA10",
     organization_ids=ids,
     collaboration_id=1
 )
@@ -94,7 +94,7 @@ for round in range(cov_rounds):
             }
         },
         name = "PCA, covariance calc, round" + str(round),
-        image= "sgarst/federated-learning:fedPCA9",
+        image= "sgarst/federated-learning:fedPCA10",
         organization_ids=ids,
         collaboration_id=1
     )
@@ -110,12 +110,10 @@ for round in range(cov_rounds):
         global_cov_mat[:,round * rows_to_calc: min((round + 1) * rows_to_calc, num_cols)] += np.load(BytesIO(res[i]["result"]), allow_pickle=True)
 
     
-
-print(global_cov_mat)
-
+'''
 with open ("cov_mat_global.npy", "wb") as f:
     np.save(f, global_cov_mat)
-
+'''
 
 # calculate eigenvalues/vectors of covariance matrix
 

@@ -72,7 +72,15 @@ def RPC_do_PCA(data,eigenvecs, global_mean, global_std):
     stand_data = (data.drop(columns = ['test/train', 'label']).values - global_mean) / global_std
 
     data_PCA = np.matmul(stand_data, eigenvecs)
-    with open("PCA_local.npy", "wb") as f:
+    with open("/mnt/data/PCA_local.npy", "wb") as f:
         np.save(f, data_PCA)
+
+    return True
+
+
+def RPC_saveFile_test(data):
+    rand_arr = np.random.rand(100,100)
+    with open("/mnt/data/blub.npy", "wb") as f:
+        np.save(f, rand_arr)
 
     return True
