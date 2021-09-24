@@ -28,7 +28,7 @@ def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
     #f = tb.open_file('tmp.h5', 'w')
     #filters = tb.Filters(complevel=5, complib='blosc')
     #result = f.create_carray(f.root, 'data', tb.Float32Atom(), shape=(rows_to_calc, num_cols), filters=filters)
-    row_amt = min( rows_to_calc, num_rows - (iter_num) * rows_to_calc )
+    row_amt = min( rows_to_calc, num_cols - (iter_num) * rows_to_calc )
 
     begin_row = iter_num * rows_to_calc
 
