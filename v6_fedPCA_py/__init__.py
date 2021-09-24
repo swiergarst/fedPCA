@@ -65,3 +65,14 @@ def RPC_get_metadata(data):
         "num_rows" : num_rows,
         "num_cols" : num_cols
     }
+
+
+def RPC_do_PCA(data,eigenvecs, global_mean, global_std):
+    # standardize the data
+    stand_data = (data.drop(columns = ['test/train', 'label']).values - global_mean) / global_std
+
+    data_PCA = np.matmul(stand_data, eigenvecs)
+    with open("PCA_local.npy", "wb") as f:
+        np.save(f, data_PCA)
+
+    return True

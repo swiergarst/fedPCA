@@ -16,6 +16,7 @@ from v6_simpleNN_py.model import model
 from config_functions import get_datasets, get_config,get_full_dataset
 from comp_functions import average, scaffold
 from vantage6.client import Client
+from scipy.sparse.linalg import eigs
 
 datasets = get_datasets("A2_raw", False, False)
 
@@ -26,7 +27,7 @@ privkey = "/home/swier/.local/share/vantage6/node/privkey_testOrg0.pem"
 client.setup_encryption(privkey)
 
 num_clients = 10                                                                        
-
+PCA_dims = 100
 
 ids = [org['id'] for org in client.collaboration.get(1)['organizations']]
 
@@ -40,7 +41,7 @@ metadata_task = client.post_task(
         'method' : 'get_metadata'
     },
     name = "PCA, get metadata",
-    image = "sgarst/federated-learning:fedPCA8",
+    image = "sgarst/federated-learning:fedPCA9",
     organization_ids=ids,
     collaboration_id=1
 )
@@ -93,7 +94,7 @@ for round in range(cov_rounds):
             }
         },
         name = "PCA, covariance calc, round" + str(round),
-        image= "sgarst/federated-learning:fedPCA8",
+        image= "sgarst/federated-learning:fedPCA9",
         organization_ids=ids,
         collaboration_id=1
     )
@@ -116,13 +117,42 @@ with open ("cov_mat_global.npy", "wb") as f:
     np.save(f, global_cov_mat)
 
 
+# calculate eigenvalues/vectors of covariance matrix
 
-# calculate global covariance matrix by summing up all the local cov matrices
+w,v = eigs(global_cov_mat, k = PCA_dims)
 
 
 
-# send the weighted avg/std, as well as global covariance matrix to nodes, so they can finally calculate the PCA.
+# send the weighted avg/std, as well as the eigenvectors to nodes, so they can finally calculate the PCA.
+pca_task = client.post_task(
+    input_= {
+        "method" : "do_PCA",
+        "kwargs" : {
+            "eigenvecs" : v,
+            "global_mean" : global_mean,
+            "global_std" : global_std
+        }
+    },
+    name = "final step of PCA",
+    image = "sgarst/federated-learning:fedPCA10",
+    organization_ids=ids,
+    collaboration_id=1
+)
 
+while(None in [res[i]["result"] for i in range(num_clients)]):
+    res = np.array(client.get_results(task_id = cov_partial_task.get("id")))
+    time.sleep(1)
+
+
+correct_completions = 0
+for i in range(num_clients):
+    if (np.load(BytesIO(res[i]["result"]), allow_pickle=True)):
+        correct_completions += 1
+
+if correct_completions == num_clients:
+    print("PCA complete!")
+else:
+    print("something went wrong :( check node logs")
 
 sys.exit()
 
