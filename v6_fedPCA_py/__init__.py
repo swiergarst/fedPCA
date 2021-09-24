@@ -1,7 +1,7 @@
 import numpy as np
 import tables as tb
 from vantage6.tools.util import info
-
+from sklearn.preprocessing import StandardScaler
 
 
 
@@ -55,21 +55,25 @@ def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
 def RPC_get_metadata(data):
     #returns all the required metadata to the server for the construction of the PCA later on
     local_mean = np.mean(data.drop(columns = ['test/train', 'label']).values, axis=0)
-    local_std = np.std(data.drop(columns = ['test/train', 'label']).values, axis=0)
+    local_var = np.var(data.drop(columns = ['test/train', 'label']).values, axis=0)
     num_rows = data.drop(columns = ['test/train', 'label']).values.shape[0]
     num_cols = data.drop(columns = ['test/train', 'label']).values.shape[1]    
     
     return {
         "local_mean" : local_mean,
-        "local_std" : local_std,
+        "local_var" : local_var,
         "num_rows" : num_rows,
         "num_cols" : num_cols
     }
 
 
-def RPC_do_PCA(data,eigenvecs, global_mean, global_std):
+def RPC_do_PCA(data,eigenvecs, global_mean, global_var):
     # standardize the data
-    stand_data = (data.drop(columns = ['test/train', 'label']).values - global_mean) / global_std
+    scaler = StandardScaler()
+    scaler.mean_ = global_mean
+    scaler.var_ = global_var
+
+    stand_data = (scaler.transform(data.drop(columns = ['test/train', 'label']).values))
 
     data_PCA = np.matmul(stand_data, eigenvecs)
     with open("/mnt/data/PCA_local.npy", "wb") as f:

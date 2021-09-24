@@ -57,13 +57,13 @@ while(None in [res[i]["result"] for i in range(num_clients)]):
 num_cols = np.load(BytesIO(res[0]["result"]),allow_pickle=True)["num_cols"]
 
 local_means = np.zeros((num_clients, num_cols))
-local_stds = np.zeros((num_clients, num_cols))
+local_vars = np.zeros((num_clients, num_cols))
 dataset_sizes = np.zeros(num_clients)
 
 
 for i in range(num_clients):
     local_means[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_mean"]
-    local_stds[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_std"]
+    local_vars[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_std"]
     dataset_sizes[i] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["num_rows"]
 
 
@@ -71,7 +71,7 @@ for i in range(num_clients):
 ## TODO: doublecheck if this math is legit
 
 global_mean = average(local_means, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
-global_std = average(local_stds, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
+global_var = average(local_vars, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
 
 
 # send weighted average/std back, let nodes calculate local covariance matrix. unfortunately, we have to do this 5 rows at a time b/c of sending file size limits
@@ -88,7 +88,7 @@ for round in range(cov_rounds):
             "method" : "calc_cov_mat",
             "kwargs" : {
                 "global_mean" : global_mean,
-                "global_std" : global_std,
+                "global_std" : global_var,
                 "rows_to_calc" : rows_to_calc,
                 "iter_num" : round
             }
@@ -132,57 +132,28 @@ pca_task = client.post_task(
         }
     },
     name = "final step of PCA",
-    image = "sgarst/federated-learning:fedPCA10",
+    image = "sgarst/federated-learning:fileTest",
     organization_ids=ids,
     collaboration_id=1
 )
 
 while(None in [res[i]["result"] for i in range(num_clients)]):
-    res = np.array(client.get_results(task_id = cov_partial_task.get("id")))
+    res = np.array(client.get_results(task_id = pca_task.get("id")))
     time.sleep(1)
 
 
-correct_completions = 0
-for i in range(num_clients):
-    if (np.load(BytesIO(res[i]["result"]), allow_pickle=True)):
-        correct_completions += 1
+if (np.load(BytesIO(res[:]["result"]), allow_pickle=True).all()):
+            print("PCA complete!")
 
-if correct_completions == num_clients:
-    print("PCA complete!")
-else:
-    print("something went wrong :( check node logs")
-
-sys.exit()
-
-
-
-
-
-
-
-task = client.post_task(
+'''
+print("blub")
+metadata_task = client.post_task(
     input_ = {
-        'method' : 'get_cov_mat'
+        'method' : 'saveFile_test'
     },
-    name = "PCA, first step",
-    image = "sgarst/federated-learning:fedPCAOut5",
+    name = "savefile test",
+    image = "sgarst/federated-learning:fileTest",
     organization_ids=ids,
-    collaboration_id = 1
+    collaboration_id=1
 )
-
-
-
-res = np.array(client.get_results(task_id = task.get("id")))
-
-while(None in [res[i]["result"] for i in range(num_clients)]):
-    res = np.array(client.get_results(task_id = task.get("id")))
-    time.sleep(1)
-    #print(res[0]."result")
-result = []
-for i in range(num_clients):
-    result.append(np.load(BytesIO(res[i]["result"]),allow_pickle=True))
-
-print(result[0].shape)
-sys.exit()
-
-global_cov_mat = np.sum(local_cov_mats)
+'''
