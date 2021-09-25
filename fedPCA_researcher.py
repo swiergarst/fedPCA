@@ -41,7 +41,7 @@ metadata_task = client.post_task(
         'method' : 'get_metadata'
     },
     name = "PCA, get metadata",
-    image = "sgarst/federated-learning:fedPCA10",
+    image = "sgarst/federated-learning:fedPCA11",
     organization_ids=ids,
     collaboration_id=1
 )
@@ -63,7 +63,7 @@ dataset_sizes = np.zeros(num_clients)
 
 for i in range(num_clients):
     local_means[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_mean"]
-    local_vars[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_std"]
+    local_vars[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_var"]
     dataset_sizes[i] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["num_rows"]
 
 
@@ -94,7 +94,7 @@ for round in range(cov_rounds):
             }
         },
         name = "PCA, covariance calc, round" + str(round),
-        image= "sgarst/federated-learning:fedPCA10",
+        image= "sgarst/federated-learning:fedPCA11",
         organization_ids=ids,
         collaboration_id=1
     )
@@ -128,11 +128,11 @@ pca_task = client.post_task(
         "kwargs" : {
             "eigenvecs" : v,
             "global_mean" : global_mean,
-            "global_std" : global_std
+            "global_var" : global_var
         }
     },
     name = "final step of PCA",
-    image = "sgarst/federated-learning:fileTest",
+    image = "sgarst/federated-learning:fedPCA11",
     organization_ids=ids,
     collaboration_id=1
 )
@@ -142,7 +142,7 @@ while(None in [res[i]["result"] for i in range(num_clients)]):
     time.sleep(1)
 
 
-if (np.load(BytesIO(res[:]["result"]), allow_pickle=True).all()):
+if (np.load(BytesIO(res[0]["result"]), allow_pickle=True).all()):
             print("PCA complete!")
 
 '''

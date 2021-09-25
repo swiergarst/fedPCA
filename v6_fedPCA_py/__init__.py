@@ -72,6 +72,7 @@ def RPC_do_PCA(data,eigenvecs, global_mean, global_var):
     scaler = StandardScaler()
     scaler.mean_ = global_mean
     scaler.var_ = global_var
+    scaler.scale_ = np.sqrt(global_var)
 
     stand_data = (scaler.transform(data.drop(columns = ['test/train', 'label']).values))
 
