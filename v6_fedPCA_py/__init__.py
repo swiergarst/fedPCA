@@ -76,10 +76,19 @@ def RPC_do_PCA(data,eigenvecs, global_mean, global_var):
 
     stand_data = (scaler.transform(data.drop(columns = ['test/train', 'label']).values))
 
-    data_PCA = np.matmul(stand_data, eigenvecs)
-    with open("/mnt/data/PCA_local.npy", "wb") as f:
-        np.save(f, data_PCA)
+    if (np.NaN in stand_data):
+        info(f"NaN in stand_data!")
 
+    data_PCA = np.matmul(stand_data, eigenvecs)
+
+    if (np.NaN in data_PCA):
+        info(f"NaN in data_PCA!")
+
+ 
+     
+    with open("/mnt/data/PCA_blub.npy", "wb") as f:
+        np.save(f, data_PCA)
+    
     return True
 
 

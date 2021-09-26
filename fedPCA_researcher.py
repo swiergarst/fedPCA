@@ -41,7 +41,7 @@ metadata_task = client.post_task(
         'method' : 'get_metadata'
     },
     name = "PCA, get metadata",
-    image = "sgarst/federated-learning:fedPCA11",
+    image = "sgarst/federated-learning:fedPCA12",
     organization_ids=ids,
     collaboration_id=1
 )
@@ -94,7 +94,7 @@ for round in range(cov_rounds):
             }
         },
         name = "PCA, covariance calc, round" + str(round),
-        image= "sgarst/federated-learning:fedPCA11",
+        image= "sgarst/federated-learning:fedPCA12",
         organization_ids=ids,
         collaboration_id=1
     )
@@ -126,13 +126,13 @@ pca_task = client.post_task(
     input_= {
         "method" : "do_PCA",
         "kwargs" : {
-            "eigenvecs" : v,
+            "eigenvecs" : v.real,
             "global_mean" : global_mean,
             "global_var" : global_var
         }
     },
     name = "final step of PCA",
-    image = "sgarst/federated-learning:fedPCA11",
+    image = "sgarst/federated-learning:fedPCA12",
     organization_ids=ids,
     collaboration_id=1
 )
