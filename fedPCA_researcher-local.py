@@ -62,7 +62,18 @@ w,v  = eigs(cov_rand, k = PCA_dims)
 global_mean = average(local_means, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
 global_var = average(local_vars, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
 
-
+cov_partial_task = client.post_task(
+        input_= {
+            "method" : "calc_cov_mat",
+            "kwargs" : {
+                "global_mean" : global_mean,
+                "global_var" : global_var,
+                "rows_to_calc" : 5,
+                "iter_num" : 0
+            }
+        },
+        organization_ids=org_ids,
+    )
 
 task = client.create_new_task(
     input_ = {

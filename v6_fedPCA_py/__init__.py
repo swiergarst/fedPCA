@@ -1,5 +1,4 @@
 import numpy as np
-import tables as tb
 from vantage6.tools.util import info
 
 
@@ -16,7 +15,7 @@ def rpc_master(data):
     pass
 
 
-def RPC_calc_cov_mat(data, global_mean, global_var, rows_to_calc, iter_num):
+def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
 
     
     #data_vals = data.drop(columns = ['test/train', 'label']).values
@@ -25,9 +24,9 @@ def RPC_calc_cov_mat(data, global_mean, global_var, rows_to_calc, iter_num):
 
         # standardize the data
     # workaround for points where the variance = 0
-    for var, i in enumerate(global_var):
+    for i, var in enumerate(global_std):
         if var == 0:
-            global_var[i] = 1
+            global_std[i] = 1
     stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_var
 
 
@@ -61,34 +60,34 @@ def RPC_calc_cov_mat(data, global_mean, global_var, rows_to_calc, iter_num):
 def RPC_get_metadata(data):
     #returns all the required metadata to the server for the construction of the PCA later on
     local_mean = np.mean(data.drop(columns = ['test/train', 'label']).values, axis=0)
-    local_var = np.var(data.drop(columns = ['test/train', 'label']).values, axis=0)
+    local_std = np.std(data.drop(columns = ['test/train', 'label']).values, axis=0)
     num_rows = data.drop(columns = ['test/train', 'label']).values.shape[0]
     num_cols = data.drop(columns = ['test/train', 'label']).values.shape[1]    
     
     return {
         "local_mean" : local_mean,
-        "local_var" : local_var,
+        "local_var" : local_std,
         "num_rows" : num_rows,
         "num_cols" : num_cols
     }
 
 
-def RPC_do_PCA(data,eigenvecs, global_mean, global_var):
+def RPC_do_PCA(data,eigenvecs, global_mean, global_std):
         # standardize the data
     # workaround for points where the variance = 0
-    for i, var in enumerate(global_var):
+    for i, var in enumerate(global_std):
         if var == 0:
-            global_var[i] = 1
+            global_std[i] = 1
     stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_var
 
     data_PCA = np.matmul(stand_data, eigenvecs)
 
 
  
-    '''
+    
     with open("/mnt/data/PCA_blub.npy", "wb") as f:
         np.save(f, data_PCA)
-    '''
+    
     print(data_PCA)
     return True
 
