@@ -1,7 +1,7 @@
 import numpy as np
 import tables as tb
 from vantage6.tools.util import info
-from sklearn.preprocessing import StandardScaler
+
 
 
 
@@ -16,14 +16,20 @@ def rpc_master(data):
     pass
 
 
-def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
+def RPC_calc_cov_mat(data, global_mean, global_var, rows_to_calc, iter_num):
 
     
     #data_vals = data.drop(columns = ['test/train', 'label']).values
     num_rows = data.drop(columns = ['test/train', 'label']).values.shape[0]
     num_cols = data.drop(columns = ['test/train', 'label']).values.shape[1]
 
-    
+        # standardize the data
+    # workaround for points where the variance = 0
+    for var, i in enumerate(global_var):
+        if var == 0:
+            global_var[i] = 1
+    stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_var
+
 
     #f = tb.open_file('tmp.h5', 'w')
     #filters = tb.Filters(complevel=5, complib='blosc')
@@ -32,14 +38,14 @@ def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
 
     begin_row = iter_num * rows_to_calc
 
-    rows = data.drop(columns = ['test/train', 'label']).values[:, begin_row:begin_row + row_amt]
+    rows = stand_data[:, begin_row:begin_row + row_amt]
 
     result = np.zeros((num_cols, row_amt))
     info(f"shape of result: {result.shape}")
     for i in range(num_cols):
         if (i%100) == 0:
             info(f"column  {i} of {num_cols}")
-        col = np.copy(data.drop(columns = ['test/train', 'label']).values[:,i])
+        col = np.copy(stand_data[:,i])
         result[i,:] = np.dot(col,rows)
     
     '''  
@@ -68,27 +74,22 @@ def RPC_get_metadata(data):
 
 
 def RPC_do_PCA(data,eigenvecs, global_mean, global_var):
-    # standardize the data
-    scaler = StandardScaler()
-    scaler.mean_ = global_mean
-    scaler.var_ = global_var
-    scaler.scale_ = np.sqrt(global_var)
-
-    stand_data = (scaler.transform(data.drop(columns = ['test/train', 'label']).values))
-
-    if (np.NaN in stand_data):
-        info(f"NaN in stand_data!")
+        # standardize the data
+    # workaround for points where the variance = 0
+    for i, var in enumerate(global_var):
+        if var == 0:
+            global_var[i] = 1
+    stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_var
 
     data_PCA = np.matmul(stand_data, eigenvecs)
 
-    if (np.NaN in data_PCA):
-        info(f"NaN in data_PCA!")
 
  
-     
+    '''
     with open("/mnt/data/PCA_blub.npy", "wb") as f:
         np.save(f, data_PCA)
-    
+    '''
+    print(data_PCA)
     return True
 
 

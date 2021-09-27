@@ -34,22 +34,43 @@ org_ids = [organization["id"] for organization in organizations]
 num_clients = 10                                                                        
 PCA_dims = 100
 
+print("requesting metadata")
+metadata_task = client.create_new_task(
+    input_ = {
+        'method' : 'get_metadata'
+    },
+    organization_ids=org_ids
+)
 
-## first step: make the data zero mean and 1 variance
-# to do this, every client needs to return its own mean/variance, as well as dataset size. we also need the dimensions of the dataset, so might as well return those within this step
+res = np.array(client.get_results(task_id = metadata_task.get("id")))
+#print(res)
 
-# get some random vals for mean and variance and eigenvectors
-global_var_rand = np.random.rand(784)
-global_mean_rand = np.random.rand(784)
-vecs_rand = np.random.rand(784,100)
+num_cols = res[0]["num_cols"]
+
+local_means = np.zeros((num_clients, num_cols))
+local_vars = np.zeros((num_clients, num_cols))
+dataset_sizes = np.zeros(num_clients)
+
+for i in range(num_clients): 
+    local_means[i,:] = res[i]["local_mean"]
+    local_vars[i,:] = res[i]["local_var"]
+    dataset_sizes[i] = res[i]["num_rows"]
+# get some random vals for the covariance matrix
+cov_rand = np.random.rand(num_cols,num_cols)
+w,v  = eigs(cov_rand, k = PCA_dims)
+
+global_mean = average(local_means, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
+global_var = average(local_vars, dataset_sizes, None, None, None, use_sizes=True, use_imbalances=False)
+
+
 
 task = client.create_new_task(
     input_ = {
         'method' : 'do_PCA',
         'kwargs' : {
-            'eigenvecs' : vecs_rand,
-            'global_mean' : global_mean_rand,
-            'global_var' : global_var_rand
+            'eigenvecs' : v.real,
+            'global_mean' : global_mean,
+            'global_var' : global_var
         }
     },
     organization_ids=org_ids

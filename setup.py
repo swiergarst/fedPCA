@@ -24,9 +24,7 @@ setup(
     packages=['v6_fedPCA_py'],
     python_requires='>=3.6',
     install_requires=[
-        'numpy',
-        'tables',
-        'sklearn'
+        'numpy'
         # 'vantage6-client'
     ]
     # ,
