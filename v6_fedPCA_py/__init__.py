@@ -27,7 +27,7 @@ def RPC_calc_cov_mat(data, global_mean, global_std, rows_to_calc, iter_num):
     for i, var in enumerate(global_std):
         if var == 0:
             global_std[i] = 1
-    stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_var
+    stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_std
 
 
     #f = tb.open_file('tmp.h5', 'w')
@@ -66,7 +66,7 @@ def RPC_get_metadata(data):
     
     return {
         "local_mean" : local_mean,
-        "local_var" : local_std,
+        "local_std" : local_std,
         "num_rows" : num_rows,
         "num_cols" : num_cols
     }
@@ -78,7 +78,7 @@ def RPC_do_PCA(data,eigenvecs, global_mean, global_std):
     for i, var in enumerate(global_std):
         if var == 0:
             global_std[i] = 1
-    stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_var
+    stand_data = ((data.drop(columns = ['test/train', 'label']).values) - global_mean) / global_std
 
     data_PCA = np.matmul(stand_data, eigenvecs)
 
