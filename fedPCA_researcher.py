@@ -26,11 +26,11 @@ client.authenticate("researcher", "1234")
 privkey = "/home/swier/.local/share/vantage6/node/privkey_testOrg0.pem"
 client.setup_encryption(privkey)
 
-num_clients = 10                                                                        
+num_clients = 2                                                               
 PCA_dims = 100
 
 ids = [org['id'] for org in client.collaboration.get(1)['organizations']]
-'''
+
 # first step: calculate the mean
 print("requesting metadata")
 metadata_task = client.post_task(
@@ -39,13 +39,13 @@ metadata_task = client.post_task(
     },
     name = "PCA, get metadata",
     image = "sgarst/federated-learning:fedPCA16",
-    organization_ids=ids,
+    organization_ids=ids[0:num_clients],
     collaboration_id=1
 )
 
 
 res = np.array(client.get_results(task_id = metadata_task.get("id")))
-
+print(res.shape)
 
 while(None in [res[i]["result"] for i in range(num_clients)]):
     res = np.array(client.get_results(task_id = metadata_task.get("id")))
@@ -58,7 +58,7 @@ local_means = np.zeros((num_clients, num_cols))
 local_std = np.zeros((num_clients, num_cols))
 dataset_sizes = np.zeros(num_clients)
 
-
+print("original dimensions:" ,num_cols)
 for i in range(num_clients):
     local_means[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_mean"]
     local_std[i,:] = np.load(BytesIO(res[i]["result"]),allow_pickle=True)["local_std"]
@@ -96,7 +96,7 @@ for round in range(cov_rounds):
         },
         name = "PCA, covariance calc for std, round" + str(round),
         image= "sgarst/federated-learning:fedPCA16",
-        organization_ids=ids,
+        organization_ids=ids[0:num_clients],
         collaboration_id=1
     )
 
@@ -112,12 +112,12 @@ for round in range(cov_rounds):
 
 global_cov_mat_corrected = global_cov_mat_unnormed / (np.sum(dataset_sizes) - 1)
 
-with open ("cov_mat_global_corrected.npy", "wb") as f:
+with open ("cov_mat_global_corrected_3node.npy", "wb") as f:
     np.save(f, global_cov_mat_corrected)
 
 
 
-global_cov_mat_corrected = np.load("cov_mat_global_corrected.npy")
+#global_cov_mat_corrected = np.load("cov_mat_global_corrected_3node.npy")
 vars = np.diagonal(global_cov_mat_corrected)
 
 
@@ -145,7 +145,7 @@ for round in range(cov_rounds):
         },
         name = "PCA, covariance calc, round" + str(round),
         image= "sgarst/federated-learning:fedPCA16",
-        organization_ids=ids,
+        organization_ids=ids[0:num_clients],
         collaboration_id=1
     )
 
@@ -165,7 +165,7 @@ for round in range(cov_rounds):
 
     
 
-with open ("cov_mat_global.npy", "wb") as f:
+with open ("cov_mat_global_3node.npy", "wb") as f:
     np.save(f, global_cov_mat)
 
 
@@ -186,8 +186,8 @@ pca_task = client.post_task(
         }
     },
     name = "final step of PCA",
-    image = "sgarst/federated-learning:fedPCA15",
-    organization_ids=ids,
+    image = "sgarst/federated-learning:fedPCA16",
+    organization_ids=ids[0:num_clients],
     collaboration_id=1
 )
 
@@ -210,3 +210,4 @@ metadata_task = client.post_task(
     organization_ids=ids,
     collaboration_id=1
 )
+'''

@@ -87,7 +87,7 @@ def RPC_do_PCA(data,eigenvecs, global_mean, global_std):
     with open("/mnt/data/PCA_blub.npy", "wb") as f:
         np.save(f, data_PCA)
     
-    metadata = data['test/train', 'label'].values
+    metadata = data[['test/train', 'label']].values
     with open("mnt/data/metadata.npy", "wb") as f:
         np.save(f, metadata)
 
@@ -95,7 +95,7 @@ def RPC_do_PCA(data,eigenvecs, global_mean, global_std):
     return True
 
 def RPC_save_labels(data):
-    metadata = data['test/train', 'label'].values
+    metadata = data[['test/train', 'label']].values
     with open("mnt/data/metadata.npy", "wb") as f:
         np.save(f, metadata)
 
